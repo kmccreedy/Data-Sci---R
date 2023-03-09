@@ -1,0 +1,119 @@
+---
+title: "DA5020_A7_KatieMcCreedy"
+author: "Katie McCreedy"
+output:
+  pdf_document:
+    toc: true
+date: "2023-03-02"
+
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1: Scrape the data from wiki link
+```{r}
+library(rvest)
+library(dplyr)
+library(ggplot2)
+
+url <- "https://en.wikipedia.org/wiki/List_of_sovereign_states_by_percentage_of_population_living_in_poverty"
+page <- read_html(url)
+
+# Extract the table html_nodes
+poverty_table <- page %>% html_nodes("table.wikitable") %>% html_table(fill = TRUE) %>% .[[1]]
+
+# Rename the columns to meaningful titles
+colnames(poverty_table) <- c("Country", "< $1.90", "< $3.20", "< $5.50", "Year", "Continent", "Null")
+
+# Remove footnotes
+poverty_table$Country <- gsub("\\[[0-9]+\\]", "", poverty_table$Country)
+
+# Convert percentage columns to numeric using as.numeric
+poverty_table[, 2:4] <- apply(poverty_table[, 2:4], 2, function(x) gsub("[^0-9\\.]", "", x))
+poverty_table[, 2:4] <- apply(poverty_table[, 2:4], 2, as.numeric)
+```
+
+# Question 2: Calculate mean & standard deviation by continent
+```{r}
+poverty_summary <- poverty_table %>% 
+  group_by(Continent) %>% 
+  summarise(mean_5.50 = mean(`< $5.50`, na.rm = TRUE), 
+            sd_5.50 = sd(`< $5.50`, na.rm = TRUE))
+
+# Comparative analysis
+print(poverty_summary)
+```
+Africa has the highest mean percentage of the population living under $5.50 per day, with a mean = 37.29%. This is followed by Asia, with mean = 17.18%. Europe has the lowest mean percentage, with a mean = 4.24%. Africa also has the highest standard deviation, indicating that the values for poverty are less consistent/have wider spread compared to the other continents. Europe has the lowest standard deviation, indicating that the data points are more tightly clustered around the mean. Overall, this analysis suggests that poverty is a consistent, widespread issue in the continents of Africa and Asia compared to othe ther continents, while poverty rates are relatively low and consistent in continents like Europe.
+
+# Question 3: Top 10 countries with the highest percentage of people living below $5.50/day
+```{r}
+top10 <- poverty_table %>% 
+  arrange(desc(`< $5.50`)) %>% 
+  head(10) %>% 
+  select(Country, `< $5.50`, Continent)
+
+# Color code each continent for graph
+top10_colors <- c("Asia" = "lavender", "Africa" = "purple", "Europe" = "black", 
+                  "South America" = "grey", "North America" = "maroon", 
+                  "Oceania" = "blue", "Antarctica" = "green")
+
+# Bar plot of Top 10 countries
+ggplot(top10, aes(x = Country, y = `< $5.50`, fill = Continent)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = top10_colors) +
+  labs(title = "Top 10 Countries by Percentage of Population Below $5.50/Day",
+       x = "Country", y = "Percentage") +
+  theme(axis.text.x = element_text(angle = 20, vjust = 0.5, hjust=1))
+
+
+```
+This code produces the top 10 countries with the highest percentage of the population living on less than $5.50 per day. Most of these countries are situated in Sub-Saharan Africa, with only two exceptions in the Middle East, namely Afghanistan and Yemen. South Sudan has the highest proportion of its population living under such circumstances, with more than 80%. No other continent has any representation in the top 10. These findings suggest that there is a pressing need for public health measures to combat poverty in Sub-Saharan Africa.
+
+# Question 4: Countries with lowest percentage below $5.50/day
+```{r}
+bottom5 <- poverty_table %>% 
+  arrange(`< $5.50`) %>% 
+  head(5) %>% 
+  select(Country, `< $5.50`, Continent)
+
+# Print results
+print(bottom5)
+```
+The five countries with the lowest percentages below $5.50/day are Azerbaijan, UAE, Iceland, Belarus, and Finland, with all countries having less than 10% of their population living on less than $5.50 per day. When compared to the other income groups ($1.90 and $3.20), the percentage of the population living on less than $5.50 per day is consistently lower in these five countries. One hypothesis is that these countries have stronger social safety net programs akin to welfare and medicare programs in the U.S.
+
+# Question 5: Box plots for the selected continents
+```{r}
+selected_continents <- c("Asia", "Africa")
+
+# Subset data by selected continents
+selected_data <- poverty_table %>% 
+  filter(Continent %in% selected_continents)
+
+# Plot box plots < $5.50
+ggplot(selected_data, aes(x = Continent, y = `< $5.50`, fill = Continent)) +
+  geom_boxplot() +
+  scale_fill_manual(values = top10_colors) +
+  labs(title = "Percentage of Population Below $5.50/Day by Continent",
+       x = "Continent", y = "Percentage")
+
+# Plot box plots for < $3.20
+ggplot(selected_data, aes(x = Continent, y = `< $3.20`, fill = Continent)) +
+  geom_boxplot() +
+  scale_fill_manual(values = top10_colors) +
+  labs(title = "Percentage of Population Below $3.20/Day by Continent",
+       x = "Continent", y = "Percentage")
+
+# Plot box plots for < $1.90
+ggplot(selected_data, aes(x = Continent, y = `< $1.90`, fill = Continent)) +
+  geom_boxplot() +
+  scale_fill_manual(values = top10_colors) +
+  labs(title = "Percentage of Population Below $1.90/Day by Continent",
+       x = "Continent", y = "Percentage")
+
+
+
+```
+The box plots of the percent of population living under each poverty line for Africa and Asia reveal positively skewed distributions with many outliers, suggesting that a large proportion of the population in these continents live under extreme poverty conditions. In Africa, the median percentage living under $1.90 per day is higher than the medians for $3.20 and $5.50 per day. The IQR for $1.90 and $3.20 per day is almost the same, while the IQR for $5.50 per day is wider, and there are many outliers in this poverty line. On the other hand, in Asia, the median percentage living under $1.90 per day is the highest among the three poverty lines, and the IQR for $1.90 per day is the widest, indicating that poverty is more severe in Asia than Africa.
+
+In terms of poverty levels across the different income groups, the wider IQR for $5.50 per day in Africa highlights greater disparity among African countries. Conversely, the narrowest IQR for $5.50 per day in Asia suggests that most Asian countries have similar poverty levels in this income group. Overall, the box plots demonstrate that poverty is a severe problem in both continents, with a significant proportion of the population living under extreme poverty conditions.

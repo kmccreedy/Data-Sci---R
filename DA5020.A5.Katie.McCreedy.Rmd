@@ -1,0 +1,120 @@
+---
+title: "DA Countries"
+output: pdf_document
+date: "2023-02-13"
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load libraries
+library(XML)
+library(xml2)
+library(methods)
+library(RCurl)
+library(dplyr)
+library(stringr)
+library(tidyverse)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(readr)
+
+#Question 1 - load the XML file into R
+fileurl <- "https://www.senate.gov/general/contact_information/senators_cfm.xml"
+download.file(fileurl, destfile = "senators_cfm.xml")
+Senators <- xmlToDataFrame("senators_cfm.xml")
+dim(Senators)
+```
+
+
+```{r setup, include=TRUE} 
+# Question 2 - construct a regular expression of names
+Senators$last_name <- str_extract(Senators$last_name, '[A-Z][a-z]+' )
+Senators$last_name
+```
+
+
+```{r setup, include=TRUE} 
+# Question 2 - construct a regular expression of names
+Senators$first_name <- str_extract(Senators$first_name, '[A-Z][a-z]+' )
+Senators$first_name
+
+SenatorsByState<- function(x){
+  SS<-Senators %>%
+    filter(state == x) %>%
+    select(state, first_name, last_name, party) %>%
+    group_by(state)
+  p <- paste("The senators for", (x), "are: ")
+  q <- paste(SS$first_name, SS$last_name, ",", recode(SS$party, "D" = "Democratic Party", 
+                                                      "R" = "Republican Party", "I"="Independent"))
+  r <- str_c(q, collapse = "and")
+  s<-str_c(p,r)
+  return(s) }
+
+SenatorsByState("FL")
+SenatorsByState("MA")
+
+```
+```
+
+
+```{r setup, include=TRUE}
+#load data & tidy data
+library(readr)
+data10 <- read_csv("Ratio Of Female To Male Youth Unemployment Rate .csv", skip=4)
+table3 %>% 
+  separate(rate, into = c("cases", "population"), sep = ",")
+
+```
+This code prepares the country data for analysis and loads the requisite packages.
+
+```{r echo=TRUE}
+#Questions 4
+
+# Tidy data
+data11 <- data10 %>%
+  pivot_longer(cols = starts_with("19"), names_to = "Year", values_to = "value") %>%
+  filter(!is.na(value)) %>%
+  mutate(Year = as.integer(Year))
+
+# Divide the data into country_name and indicator_data tibbles
+country_name <- data11 %>%
+  select("Country Name", "Country Code") %>%
+  distinct()
+
+indicator_data <- data11 %>%
+  select("Country Code", "Year", "value")
+
+# merge the country data and the employment data by country code
+df = merge(x = indicator_data, y = Country_Meta_Data, by = "Country Code",
+                                 all.x = TRUE)
+
+# Filter the data to select five countries from each continent
+selected_countries <- df %>%
+  filter(Region %in% c("North America", "Europe & Central Asia", "Middle East & North Africa", slice_head=5)) %>%
+  unique()
+
+# Filter the data for the last 20 years
+selected_countries_20 <- selected_countries %>%
+  filter(Year >= 2000)
+
+# Invalid because there is no data from the last 20 years.
+```
+This code splits that data into the country_name and indicator_data tibbles using pivot and separate functions as needed. It also merges the country meta data with the unemployment data. 
+
+```{r echo=TRUE}
+# Quesiton 5 - Plot the data using a line chart
+na.omit(selected_countries)
+ggplot(selected_countries, aes(x = Year, y = value, color = "Country Code")) +
+  geom_line() +
+  facet_wrap(~ Region) +
+  ggtitle("Ratio of Female to Male Youth Unemployment Rate by Continent") +
+  xlab("Year") +
+  ylab("Ratio")
+
+
+```
+This chart represents the ratio of male and female unemployment between 1992-1998 for a subset of North American, Asia, and Middle Eastern countries. A higher ratio of male:female unemployment means that men experience higher unemployment than women. This ratio has the greatest skew in the Middle East, the second greatest in Asia, and almost no skew in North America. One hypothesis is that due to cultural differences in gender-based employment, women may not be seeking work in the Middle East and Asia as often as women in North America, meaning that they will have much lower rates of unemployment because they are never seeking employment. Further, it is interesting to note that the gender skew did not change dramatically over the 1992-1998 time period. 
+

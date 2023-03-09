@@ -1,0 +1,108 @@
+---
+title: "HDP Assignment #5"
+output: html_document
+date: "2022-11-07"
+---
+M1<-glmer(remission~IL6+CRP+CancerStage+LengthofStay+Experience+(1|DID), data=hdp, family=binomial, control=glmerControl (optimizer="bobyqa"))
+confint(M1)
+m0: remission ~ IL6 + CRP + LengthofStay + Experience + (1 | DID)
+m1: remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience + 
+(1 | DID)
+
+#quasi poisson
+
+summary(model4<-glmmPQL(heart~trt+sex,random=~1|rehab,family=quasipoisson))
+
+#negative binomial
+summary(model5<-glmer.nb(heart~trt+sex+(1|rehab)))
+
+#Class 2 Practice 11/10
+library(sjPlot)
+library(lattice)
+library(lmertest)
+library(lme4)
+
+attach(hdp)
+#random intercept model for tumorsize
+M1<-lmer(tumorsize~Age+pain+SmokingHx+(1|DID))
+tab_model(M1, df.method="satterthwaite")
+summary(M1)
+
+#exploratory plots
+plot_model(M1, type="re")
+boxplot(hdp$tumorsize~hdp$DID)
+plot(tapply(hdp$tumorsize, hdp$DID, FUN=mean))
+
+#linearity
+plot(resid(M1)~hdp$Age, pch=".")
+abline(M1)
+
+
+#cooks distance
+plot(cooks.distance(M1))
+
+#Level 2 Residuals
+plot_model(M1, type="diag")
+library(predictmeans)
+residplot(M1)
+plot(M1)
+
+library(gamm4)
+scatter.smooth(x=Age, y=tumorsize, pch".", span=.05, col="gre")
+GAM1<-gamm4(tumorsize~SmokingHx+pain+s(Age,bs="cr"), random.effects())
+plot(GAM1$gam)
+
+#compare models, hinged piecewise linear function
+AGE65<-ifelse(Age<65,0,Age-65)
+M2<-lmer(tumorsize~Age+AGE65+pain+SmokingHx+(1|DID), data=hdp)
+summary(M2)
+
+#example poisson
+hist(ntumors)
+tapply(ntumors, SmokingHx, FUN=mean)
+P1<-glmer(ntumors~Age+SmokingHx+(1|HID), family=poisson)
+P2<-glmer(ntumors~Age+(1|HID), family=poisson)
+plot(P2)
+anova(P2, P1)
+
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#ASSIGNMENT 5
+library(readxl)
+hdp <- read_excel("hdp.xlsx")
+remove(df)
+#clean data
+library(naniar)
+miss_var_summary(data=hdp, order = FALSE, add_cumsum = FALSE)
+attach(hdp)
+is.na(hdp$HID)
+is.na(hdp$DID)
+is.na(hdp$CancerStage)
+is.na(hdp$SmokingHx)
+is.na(hdp$ntumors)
+is.na(hdp$schools)
+
+#summary table
+library(psych)
+attach(hdp)
+describe(hdp~HID+DID)
+
+#LowLung variable
+attach(hdp)
+p <- seq(0.25, 0.50, 0.75)
+percentiles <- quantile(hdp$lungcapacity, p)
+head(percentiles)
+LowLung<-ifelse(lungcapacity<0.676, 1, 0)
+summary(LowLung)
+library(confintr)
+ci_mean(LowLung)
+
+
+
+
+```
+
+`````{include=TRUE}
+
+

@@ -1,0 +1,84 @@
+---
+title: "DA5020_A3_KatieMcCreedy"
+output: pdf_document
+date: "2023-01-27"
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#Question 2
+devtools::install_github("apache/arrow/r")
+library(arrow)
+tripdata_df<-read_parquet("green_tripdata_2020-02 (1).parquet", as_tibble = TRUE)
+dim(tripdata_df)
+summary(tripdata_df)
+glimpse(tripdata_df)
+
+```
+This code is inspecting, loading and organizing the data. 
+
+```{r}
+#Question 3
+attach(tripdata_df)
+hist(PULocationID)
+summary(lpep_pickup_datetime)
+hist(passenger_count)
+```
+Assessed the data for unusual standout aspects. Here are 3 unusual aspects. (1) The PULocationID is somewhat left-skewed towarded lower-value locations indicating that more of them are in the same place. (2) The trip dates include Jan 31, which is not in Feb, despite this being a Feb dataset. (3) Nearly all rides were for 2 or fewer people, which is in contrast to the shared aspects of ubers and lyfts.
+```{r}
+#Question 4
+hist(trip_distance)
+hist(trip_distance,ylim=c(0,100000),xlim=c(0,25))
+20959/398632
+```
+This histogram is clearly left-skewed, with the majority of trips falling between 0-10 trip distance. 
+```{r}
+#Question 4
+ggplot(tripdata_df) +
+  aes(x = tip_amount, y = trip_distance) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+```
+There are numerous outliers for trip_distance displayed by this plot, especially in the upper bounds.
+```{r}
+#Question 5 - trip dist outliers
+sd(tripdata_df$trip_distance)
+mean(tripdata_df$trip_distance)
+lower_bound <-(2.661967-2.84619*3)
+upper_bound <- (2.661967+2.84619*3)
+outlier_ind <- which(tripdata_df$trip_distance < lower_bound | tripdata_df$trip_distance > upper_bound)
+outlier_ind
+
+#Question 5 - tip_amount outliers
+sd(tripdata_df$tip_amount)
+mean(tripdata_df$tip_amount)
+lower_bound_tip <-(0.9864337-2.208497*3)
+upper_bound_tip <- (0.9864337+2.208497*3)
+outlier_ind_tip <- which(tripdata_df$tip_amount < lower_bound_tip | tripdata_df$tip_amount > upper_bound_tip)
+outlier_ind_tip
+max(tip_amount)
+min(tip_amount)
+
+#subsetting by removing tip outliers
+newdata<-subset(tripdata_df, tip_amount < 7.6119247)
+newdata2 <-subset(newdata, tip_amount > -5.639)
+
+#Question 6
+#filtering the data to remove outliers from trip distance
+newdata3<-subset(tripdata_df, trip_distance < 11.2)
+newdata4 <-subset(newdata3, trip_distance > -5.8)
+attach(newdata4)
+plot(c(trip_distance, payment_type), main="Trip Distance vs. Payment Type",
+        xlab="trip distance (mi)",
+        ylab="payment type")
+
+
+```
+This code identifies the outliers in the dataset, of which there are 20,959 for trip distance. Since there are 398,632 rides, this is a sensible amount of outliers at ~5% of the trips. For tip amount, there are 2,748 outliers which will now be removed. Oddly, the maximum tip was $641 and then minimum tip was -$10.56 which seems impossible, unless a passenger stole from the driver? Next, the data was plotted in a correlation plot and represented in a correlation to assess the association between the variables, which appears to be somewhat linear.
+
+```{r}
+#Question 7
+na.omit(tripdata_df)
+
+```
+Handling missing data can be done using multiple imputation, where average values are developed from similar responses for the same entity, or listwise deletion where null responses are simply removed using a function like na.omit

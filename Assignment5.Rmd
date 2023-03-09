@@ -1,0 +1,104 @@
+---
+title: "HDP Assignment 5"
+author: "Katie McCreedy"
+date: "2022-11-14"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+hdp <- read_excel("hdp.xlsx")
+
+#clean data
+library(naniar)
+miss_var_summary(data=hdp, order = FALSE, add_cumsum = FALSE)
+
+#summary table
+library(psych)
+describe(hdp)
+
+#LowLung variable
+attach(hdp)
+p <- seq(0.25, 0.50, 0.75)
+percentiles <- quantile(hdp$lungcapacity, p)
+head(percentiles)
+LowLung<-ifelse(lungcapacity<0.676, 1, 0)
+summary(LowLung)
+library(confintr)
+ci_mean(LowLung)
+
+# two-level null logistic model ignoring hospitals
+library(lmerTest)
+library(lme4)
+Model0<-lmer(LowLung ~ 1+(1|DID),data=hdp)
+summary(Model0)
+plot(Model0)
+library(performance)
+icc(Model0)
+r2(Model0)
+cor(LowLung,DID)
+plot(LowLung, DID, pch = 19, col = "lightblue")
+
+
+#LowLung and CancerStage
+attach(hdp)
+library(lme4)
+table(LowLung, CancerStage)
+Model1<-glmer(LowLung~CancerStage+(1|DID), data=hdp, family=binomial)
+confint(Model1) 
+
+
+library(lme4)
+attach(hdp)
+summary(model5<-glmer(LowLung~CancerStage+(1|DID),family=binomial, na.action=na.omit))
+
+
+# two-level log regression model predicting LowLung
+attach(hdp)
+library(lmerTest)
+library(lme4)
+round(hdp, digits = 3)
+Model6<-lmer(LowLung~CancerStage+SmokingHx+ntumors+(1|School))
+summary(Model6)
+
+
+# two-level log regression model predicting LowLung Interaction
+attach(hdp)
+library(lmerTest)
+library(lme4)
+Model7<-lmer(LowLung~CancerStage+SmokingHx+ntumors+CancerStage*SmokingHx+(1|School))
+summary(Model7)
+
+
+# three-level model
+library(lmerTest)
+library(lme4)
+ModelThreeLevel<-lmer(LowLung~CancerStage+SmokingHx+ntumors+(1|HID)+(1|School:HID))
+summary(ModelThreeLevel)
+
+anova(Model7, ModelThreeLevel)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,78 @@
+---
+title: "DA5020.A1.Katie.McCreedy"
+author: "Katie McCreedy"
+date: "2023-01-16"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#Question 2
+df <- data.frame (cars  = c("Truck", "Car", "SUV"), mpg = c(11, 30, 24), cost = c(45000, 25000, 35000))
+df
+```
+This question demonstrates the data frame creating values for truck, car, and SUV.
+```{r}
+#Question 2a
+df[1,3]
+df[1-3]
+df[3]
+```
+
+These lines display various values and rows and columns of data within the created df dataset. 
+```{r}
+#Question 3
+data(mtcars)
+tail(mtcars, n = 3)
+head(mtcars, n=3)
+```
+This displays the first 3 and final 3 rows of data in the dataset.
+```{r}
+#Question 4
+attach(mtcars)
+categorical <- names(sapply(mtcars,typeof))
+categorical
+
+#describing 2 categorical variables
+cat <- names(sapply(mtcars,typeof))
+cat[c(8,9)]
+
+#describing 2 continuous variables
+cont <- names(sapply(mtcars,typeof))
+cont[c(1,3)]
+```
+These calls ask R to display the names of categorical and continuous variables. For example, continuous variables do not have finite or binary categories so these are variables like mpg and disp.
+```{r}
+#Question 5 - original code
+library(ggplot2)
+plot1 <- ggplot(mtcars, aes(x=disp, y=mpg))
+plot1
+
+
+#Question 5 - updated code
+plot2<-ggplot(mtcars, aes(disp, mpg)) + geom_point()
+plot2
+```
+
+The code does not display a chart because the code wants to represent the chart without information on dots to plot. We need to add Geom_point in order to display the data. Updated code with + geom_point () added so that the data points are selected and displayed.
+
+```{r}
+#Question 6
+mpg
+plot6<-ggplot(mpg, aes(x = hwy, y = displ, color = cyl)) +
+  geom_point()
+plot6
+```
+The scatterplot represents the linear relationship between miles display and highway speed of the cars in the mtcars dataset. This is an inverse relationship between displ and hwy meaning that as the displ of a vehicle increases the hwy decreases. 
+
+```{r}
+#Question 7
+plot7<- ggplot(mpg, aes(x = hwy, y = displ, color = cyl)) + geom_point() + facet_wrap(~drv)
+plot7
+```
+These results indicate that when the cylinder number is decreasing, the hwy is increasing for front wheel drive and 4wd, but not as significantly for rear wheel drive. 4wd and fwd have a stronger inverse relationship between displ and hwy than does rwd. Vehicles in this dataset with 4wd and fwd with higher hwy 
+
+
+```
+

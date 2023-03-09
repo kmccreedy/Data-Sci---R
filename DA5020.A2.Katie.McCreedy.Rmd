@@ -1,0 +1,76 @@
+---
+title: "DA5020.A2.Katie.McCreedy"
+author: "Katie McCreedy"
+date: "2023-01-21"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=TRUE}
+#Questions Set-up
+install.packages("dplyr")
+install.packages("ggplot2")
+library(dplyr)
+library(ggplot2)
+attach(msleep)
+df<-msleep
+summary(msleep)
+```
+Preparing the dataframe, loading requisite packages, summarizing the data.
+
+
+```{r}
+#Question 2
+table1<-table(df$vore)
+library(sur)
+percenttable<-percent.table(df$vore)
+
+barplot(table1, main="Animal Eating Preferences",
+   xlab="-vore status", ylab="proportion (%)")
+```
+The above barplot depicts the proportion of animals in the dataset by eating habit category (vore) including carnivore, herbivore, insectivore, and omnivore.
+
+```{r}
+#Question 3
+omnisleep<-filter(msleep, vore =="omni")
+summarise(omnisleep, avg=mean(sleep_total))
+```
+Filted for omnivores in the dataset and calculated the mean = 10.95. This means that for the omnivores in the dataset, the average animal gets 10.95 hours of sleep. 
+
+```{r}
+#Question 4
+attach(msleep)
+plot2<-plot(log10(msleep$brainwt),log10(msleep$bodywt),col = "purple", main = "brainwt vs. bodywt")
+```
+This scatterplot represents the linear relationship between brain weight and body weight amongst the animals in this msleep dataset. There is a strong, positively linear relationship between these variables especially after adjusting to a logarthymic scale.
+
+```{r}
+#Question 5
+library(ggplot2)
+plot3 <- ggplot(df, aes(log10(bodywt), log10(brainwt), colour = "blue"))+ geom_point() + geom_smooth(alpha=0.3, method="lm")
+print(plot3)
+
+library(stats)
+cor(msleep$bodywt,msleep$brainwt)
+
+#Question 6 - finding outliers
+x<-msleep$sleep_total
+qqnorm(x, main = "Normal Q-Q plot")
+mean = mean(sleep_total)
+sd = sd(sleep_total)
+
+# threshold for outliers
+xmin = mean-(1.5*sd)
+xmax = mean+(1.5*sd)
+
+# finding outliers
+outliers<-(which(x < xmin | x > xmax))
+outliers3<-msleep[c(10, 18, 20, 22, 23, 24, 30, 31, 36, 37, 43, 59, 62), ] 
+outliers4<-outliers3[ , c("name", "sleep_total")]  
+print(outliers4)
+```
+Practice printing the correlation plot using ggplot! Next, the pearson correlation produces "NA" value. This is because the pearson correlation test assumes that there is a linear relationship between both variables. Clearly, this is not the case, which differs from the visually seeming linear scatterplot in Q4. 
+
+Question #6: The Normal QQ-plot first visually displays outliers in the upper right-hand corner. Then, created the thresholds for 1.5 times the standard deviation for sleep_total outside of which the outliers lay. Finally, a table is displayed presenting the outliers by their name and total sleep
+

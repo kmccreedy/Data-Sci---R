@@ -1,0 +1,171 @@
+---
+title: "DA5020_A6_KatieMcCreedy"
+author: "Katie McCreedy"
+date: "2023-02-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Question 1 - sql code
+#Last login: Fri Feb 24 19:17:34 on ttys000
+#katiemccreedy@Katies-MacBook-Air ~ % 
+#katiemccreedy@Katies-MacBook-Air ~ % sqlite3
+#SQLite version 3.37.0 2021-12-09 01:34:53
+#Enter ".help" for usage hints.
+#Connected to a transient in-memory database.
+#Use ".open FILENAME" to reopen on a persistent database.
+#sqlite> .open imdb.db
+#sqlite> .read imdb.db
+#Usage: .read FILE
+#sqlite> .import directors.csv director_info
+#sqlite> CREATE TABLE director_info (
+   ...>     Director_ID INTEGER PRIMARY KEY,
+   ...>     Director_Name TEXT
+   ...> );
+#sqlite> .mode csv
+#sqlite> .import directors.csv director_info
+#sqlite> SELECT*FROM director_info;
+#1,"Aamir Khan"
+#2,"Aaron Sorkin"
+
+
+```{r setup, include=FALSE}
+# Load the DBI and RSQLite packages
+library(DBI)
+library(RSQLite)
+```
+
+```{r echo=TRUE}
+#connect to the database
+con <- dbConnect(RSQLite::SQLite(), "imdb.db(2)")
+
+# Count the number of rows in the "director_info" table
+n_directors <- dbGetQuery(con, "SELECT COUNT(*) FROM director_info")$`COUNT(*)`
+
+con <- dbConnect(RSQLite::SQLite(), "imdb.db")
+# Count the number of rows in the "movie_info" table
+n_movies <- dbGetQuery(con, "SELECT COUNT(*) FROM movie_info")$`COUNT(*)`
+dbDisconnect(con)
+```
+There are 1,097 rows listed in the director_info table for 548 directors. There are 1,000 rows for movie_info. 
+
+```{r echo=TRUE, tidy=TRUE}
+# Question 2 - parts 1 & 2
+library(RSQLite)
+con <- dbConnect(SQLite(), "imdb.db")
+num_movies <- dbGetQuery(con, "SELECT COUNT(*) as num_movies FROM movie_info")
+
+
+library(RSQLite)
+con <- dbConnect(SQLite(), "imdb.db")
+num_movies <- dbGetQuery(con, "SELECT COUNT(*) as num_movies FROM movie_info WHERE Release_Year >= 2010 AND Release_Year <= 2020;")
+#248 movies are listed between 2010-2020
+
+# visualize the number of movies produced grouped by year
+library(RSQLite)
+con <- dbConnect(SQLite(), "imdb.db")
+movies_by_year <- dbGetQuery(con, "SELECT Release_Year, COUNT(*) as num_movies FROM movie_info WHERE Release_Year >= 2010 AND Release_Year <= 2020 GROUP BY Release_Year;")
+print(movies_by_year)
+
+# create a bar chart with number of movies released grouped by year
+library(ggplot2)
+ggplot(movies_by_year, aes(x = Release_Year, y = num_movies, fill = factor(Release_Year))) +
+  geom_bar(stat = "identity", color = "black") +
+  ggtitle("Number of Movies Released by Year") +
+  xlab("Year") +
+  ylab("Number of Movies") +
+  scale_fill_manual(values = c("#b39ddb", "#9575cd", "#7e57c2", "#673ab7", "#5e35b1", "#512da8", "#4527a0", "#311b92", "#1a237e", "#0d47a1", "#01579b")) +
+theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+dbDisconnect(con)
+```
+
+This bar graph visualy depicts the number of movies released each year, grouped by year, between 2010-2020 with each year being depicted by a different shade of purple gradiently (I learned how to do gradient shades in one of the datacamp courses, so I wanted to practice). There were 248 total movies produced in this time period.
+
+```{r echo=TRUE}
+#Question 2 - part 3
+library(RSQLite)
+con <- dbConnect(SQLite(), "imdb.db")
+action_ratings <- dbGetQuery(con, "SELECT MIN(IMDB_rating) AS min_rating, AVG(IMDB_rating) AS avg_rating, MAX(IMDB_rating) AS max_rating FROM movie_info WHERE Genre LIKE '%Action%';")
+print(action_ratings)
+dbDisconnect(con)
+```
+The minimum rating was 7.6, the average was 7.94, the maximum was 9 across all movies in the dataset with the genre "action". I found action movies by using wildcard operators around the word action since each genre had various specifications.
+
+```{r echo=TRUE}
+# Question 2 - Part 4
+library(RSQLite)
+con <- dbConnect(SQLite(), "imdb.db")
+top_25 <- dbGetQuery(con, "SELECT Series_Title, Genre, CAST(Gross AS REAL) AS gross_numeric FROM movie_info ORDER BY gross_numeric DESC LIMIT 25;")
+print(top_25)
+dbDisconnect(con)
+```
+This provides the top 25 grossing movies in the dataset, ranked in descending order. Notably, Star Wars, Avengers,and Avatar, which are all series movies, are in the top 3. I had to convert gross into a numeric value so that it could order the movies.
+
+```{r echo=TRUE}
+# Question 2 - Part 5
+library(RSQLite)
+library(ggplot2)
+library(dplyr)
+
+# Connect to the imdb.db database
+con <- dbConnect(RSQLite::SQLite(), "imdb.db")
+
+# Read the movie_info table into a data frame
+movie_info <- dbGetQuery(con, "SELECT * FROM movie_info")
+
+# Disconnect from the database
+dbDisconnect(con)
+
+# Read the directors.csv file into a data frame
+directors <- read.csv("directors.csv")
+
+# Join the tables on Director_ID and calculate the total gross per director
+result <- movie_info %>%
+          inner_join(directors, by = "Director_ID") %>%
+          group_by(Director) %>%
+          summarize(Total_Gross = sum(Gross)) %>%
+          arrange(desc(Total_Gross)) %>%
+          head(10)
+result
+
+# Create a bar chart of the results
+ggplot(result, aes(x = Director, y = Total_Gross)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Directors with highest-grossing movies",
+       x = "Director",
+       y = "Total Gross")
+```
+This chart depicts the total gross of the movies produced by the top grossing movie producers including Spielberg, Jackson, and Yates. I was able to create the graph by inner-joining the Director table and the movie_info table using their common column of director_id. 
+
+```{r echo=TRUE}
+# Question 2 - Part 6
+library(RSQLite)
+
+#Write the verifyDirector function
+verifyDirector <- function(Director) {
+  # Read the CSV file
+  directors <- read.csv("directors.csv")
+  
+  # Check if director was found
+  if (Director %in% directors$Director) {
+    message(paste0("Director '", Director, "' was found."))
+  } else {
+    message(paste0("Director '", Director, "' wasn't found."))
+  }
+  
+dbDisconnect(con)
+}
+
+# Use verifyDirector to see if directors exist in the dataset
+verifyDirector("Frank Darabont")
+verifyDirector("Katie McCreedy")
+
+```
+
+The function verifyDirector checks the directors table to see whether a given director is listed in the table. Frank Darabont is returned as being in the table, because he is a movie director in the database. My name returns as "Director 'Katie McCreedy' wasn't found." because I am not a movie director. Thus, the function works. 
+
+
+
+
+
